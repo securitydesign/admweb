@@ -1,312 +1,235 @@
-
-// GraphvizConfig structure to hold properties for each type of node and edge
-const ShapeOptions = {
-    BOX: 'box',
-    BOX3D: 'box3d',
+function GenerateGraphvizCode(graph, config) {
+    unmitigatedAttacks = getUnMitigatedAttacks(graph);
+    return generateDigraphCode("top", unmitigatedAttacks, graph, config);
 }
 
-function createProperty(name, value, hasHTML) {
-    if (hasHTML) {
-        return name + "=" + value + " ";
-    } else {
-        return name + "=\"" + value + "\" ";
-    }
-}
+//////////////////////////////////////////////
+// Graphviz code builder functions
 
-function ColorSet(fontcolor, fillcolor, bordercolor) {
-    return createProperty("fontcolor", fontcolor, false) +
-        createProperty("fillcolor", fillcolor, false) +
-        createProperty("color", bordercolor, false);
-}
-
-function TextProperties(fontname, fontsize) {
-    return createProperty("fontname", fontname, false) +
-        createProperty("fontsize", fontsize, false);
-}
-
-function NodeProperties(fontname, fontsize, fontcolor, fillcolor, bordercolor) {
-    return createProperty("style", "filled, rounded", false) +
-        TextProperties(fontname, fontsize) +
-        ColorSet(fontcolor, fillcolor, bordercolor) +
-        "];\n";
-}
-
-function GraphvizConfig() {
-    this.Assumption = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Times', 18, 'white', 'dimgray', 'dimgray');
-    this.Policy = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Times', 18, 'black', 'darkolivegreen3', 'darkolivegreen3');
-    this.PreConditions = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Arial', 16, 'black', 'lightgray', 'gray');
-    this.Attack = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Arial', 16, 'white', 'red', 'red');
-    this.PreEmptiveDefense = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Arial', 16, 'white', 'purple', 'blue');
-    this.IncidentResponse = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Arial', 16, 'white', 'blue', 'blue');
-    this.EmptyDefense = createProperty('shape', ShapeOptions.BOX3D, false) + NodeProperties('Arial', 16, 'black', 'transparent', 'blue');
-    this.EmptyAttack = createProperty('shape', ShapeOptions.BOX3D, false) + NodeProperties('Arial', 16, 'black', 'transparent', 'red');
-    this.Reality = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Arial', 20, 'white', 'black', 'black');
-    this.AttackerWins = createProperty('shape', ShapeOptions.BOX, false) + NodeProperties('Arial', 20, 'red', 'yellow', 'yellow');
-}
-
-function generateNode(id, label, properties) {
+function generateNodeCode(id, label, properties) {
     return id + '[' +
-    createProperty('label', label, false) +
-    properties;
+    serializeProperty(createProperty('label', wrap(label), false)) + " " +
+    serializeProperties(properties) + "];";
 }
 
-function generateHeader(id, includeAttackerWins, realityProperties, attackerWinsProperties) {
-    header = []
-    appendLine(header, 0, 'digraph ' + id + ' {');
-    appendLine(header, 1, '// Base Styling');
-    appendLine(header, 1, 'compound=true;');
-    appendLine(header, 1, 'graph[style="filled, rounded" rankdir="LR" splines="true" overlap="false" nodesep="0.2" ranksep="0.9"];');
-    appendLineSpacer(header);
-    appendLine(header, 1, '// Start and end nodes');
-    appendLine(header, 1, generateNode('reality', 'Reality', realityProperties));
-    if (includeAttackerWins) {
-        appendLine(header, 1, generateNode('attacker_wins', 'ATTACKER WINS!', attackerWinsProperties));
+function generateDigraphCode(id, unmitigatedAttacks, graph, config) {
+    var lines = []
+    appendLine(lines, 0, 'digraph ' + id + ' {');
+    appendLine(lines, 1, '// Base Styling');
+    appendLine(lines, 1, 'compound=true;');
+    appendLine(lines, 1, 'graph[' + serializeProperties(config.Graph) + '];');
+    appendLine(lines, 1, 'edge[arrowhead="empty"];');
+    appendLineSpacer(lines);
+    appendLine(lines, 1, '// Start and end nodes');
+    appendLine(lines, 1, generateNodeCode('reality', 'Reality', config.Reality));
+    if (unmitigatedAttacks.length > 0) {
+        appendLine(lines, 1, generateNodeCode('attacker_wins', 'ATTACKER WINS!', config.AttackerWins));
     }
 
-    return header;
-}
+    [initNodes, results] = generateModelGraphCode(graph);
+    lines = lines.concat(results);
 
-function generateBody(gherkinDocument, unmitigatedAttacks, edgesMap, config) {
-    body = [];
-    body = generateModelSubGraph(gherkinDocument, edgesMap, config);
+    for (preCondition of initNodes) {
+        appendLine(lines, 1, 'reality -> ' + preCondition);
+    }
+
     // connect unmitigated attacks to attacker wins node
     for (attack of unmitigatedAttacks) {
-        appendLine(body, 1, generateID(attack.name) + ' -> attacker_wins;');
+        appendLine(lines, 1, generateID(attack.label) + ' -> attacker_wins [penwidth="4" color="red"];');
     }
-    return body;
-}
-
-function generateFooter(lines) {
-    footer = []
-    /*appendLineSpacer(footer);
-    appendLine(footer, 1, 'subgraph cluster_legend {');
-    appendLine(footer, 2, 'label="Legend";');
-    appendLine(footer, 2, 'graph[style="filled, rounded" rankdir="LR" fontsize="16" splines="true" overlap="false" nodesep="0.1" ranksep="0.2" fontname="Courier" fillcolor="lightyellow" color="yellow"];');
-    appendLineSpacer(footer);
-    appendLine(footer, 2, '// Legend Nodes');
-    appendLine(footer, 2, 'A[label="Pre-\\nCondition" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="lightgray" color="gray"];');
-    appendLine(footer, 2, 'B[label="Assumptions" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="dimgray" color="dimgray"];');
-    appendLine(footer, 2, 'C[label="Attack" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="red" color="red"];');
-    appendLine(footer, 2, 'D[label="Pre-emptive\\nDefense"  shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="purple" color="blue"];');
-    appendLine(footer, 2, 'E[label="Incident\\nResponse"  shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="blue" color="blue"];');
-    appendLine(footer, 2, 'F[label="Policy" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="darkolivegreen3" color="darkolivegreen3"];');
-    appendLine(footer, 2, 'G[label="Empty\\nDefense" shape="box3d" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="transparent" color="blue"];');
-    appendLine(footer, 2, 'H[label="Empty\\nAttack" shape="box3d" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="transparent" color="red"];');
-    appendLine(footer, 1, '}');
-    appendLine(footer, 1, 'A -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'B -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'C -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'D -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'E -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'F -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'G -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(footer, 1, 'H -> reality [style="invis" ltail="cluster_Legend"];');
-    */
-    return footer;
-}
-
-function getAttackerWinsPredecessors(gherkinDocument, edgesMap) {
-}
-
-function CreateGraphvizGraph(gherkinDocument, edgesMap) {
-    //awp = getAttackerWinsPredecessors(gherkinDocument, edgesMap);
-    var lines = [];
-    var config = new GraphvizConfig();
-    // collect all attack scenarios
-    var attackScenarios = [];
-    for (child of gherkinDocument.feature.children) {
-        if (child.scenario && child.scenario.keyword == "Attack") {
-            attackScenarios.push(child.scenario);
-        }
-    }
-    
-    var unmitigatedAttacks = [];
-    // collect attacks that don't have a defense (pre-emptive or incident response) as sink
-    for (attack of attackScenarios) {
-        var mitigated = false;
-        for ([source, sinks] of edgesMap) {
-            if (source != attack) {
-                continue;
-            }
-            for (sink of sinks) {
-                if (sink["sink"].keyword == "Defense" && (sink["rule"] == "PreEmptiveDefenseRule" || sink["rule"] == "IncidentResponseRule")) {
-                    mitigated = true;
-                }
-            }
-        }
-        if (!mitigated) {
-            unmitigatedAttacks.push(attack);
-        }
-    }
-    
-    // append all strings from generateHeader string array to lines array
-    lines = lines.concat(generateHeader("top", unmitigatedAttacks.length > 0, config.Reality, config.AttackerWins));
-    lines = lines.concat(generateBody(gherkinDocument, unmitigatedAttacks, edgesMap, config));
-    lines = lines.concat(generateFooter());
     lines = lines.concat("}");
 
     return lines;
 }
 
-//////////////////////////////////////////////
-// ADM graph generator functions
-
-function generateModelSubGraph(gherkinDocument, edgesMap, config) {
-    lines = [];
-    modelProperties = NodeProperties('Arial', 24, 'black', 'transparent', 'gray');
-    appendLine(lines, 1, 'subgraph cluster_' + generateID(gherkinDocument.feature.name) + ' {');
-    appendLine(lines, 2, createProperty('label', '<<B>' + htmlwrap(gherkinDocument.feature.name) + '</B>>;', true));
-    appendLine(lines, 2, 'graph[style="filled,rounded" rankdir="LR" splines="true" overlap="false" nodesep="0.2" ranksep="0.9" fontname="Arial"  fontsize="24"  fontcolor="black"  fillcolor="transparent"  color="gray" ];');
-    preConditions = collectFreePreConditions(gherkinDocument, edgesMap, config);
-    lines = lines.concat(generatePreconditionNodes(preConditions, config));
-    for (child of gherkinDocument.feature.children) {
-        if (child.scenario) {
-            appendLine(lines, 2, generateScenarioNode(child.scenario, edgesMap, config));
-        }
-    }
-    appendLine(lines, 1, '}');
-    lines = lines.concat(connectRealityToPreConditions(preConditions));
-    lines = lines.concat(connectRealityToInitialNodes(gherkinDocument, edgesMap, config));
-    lines = lines.concat(connectPreConditionsToScenarios(preConditions, collectScenarios(gherkinDocument)));
-    
-    lines = lines.concat(connectScenarios(edgesMap));
-    return lines;
-}
-
-function generateAssumptionSubGraph(gherkinDocument, edgesMap, config) {
-}
-
-function generateScenarioNode(scenario, edgesMap, config) {
-    if (scenario.keyword == "Attack") {
-        return generateID(scenario.name) + '[' + createProperty("label", wrap(scenario.name), false) + config.Attack;
-    } else if (scenario.keyword == "Defense") {
-        // check if defense is a pre-emptive defense
-        for ([source, sinks] of edgesMap) {
-            for (sink of sinks) {
-                if (sink["sink"] == scenario) {
-                    if (sink["rule"] == "PreEmptiveDefenseRule") {
-                        return generateID(scenario.name) + '[' + createProperty("label", wrap(scenario.name), false) + config.PreEmptiveDefense;
-                    } else if (sink["rule"] == "IncidentResponseRule") {
-                        return generateID(scenario.name) + '[' + createProperty("label", wrap(scenario.name), false) + config.IncidentResponse;
-                    }
-                }
-            }            
-        }
-        // otherwise it is an empty defense (assumed to be incident response)
-        return generateID(scenario.name) + '[' + createProperty("label", wrap(scenario.name), false) + config.IncidentResponse;
-    }
-}
-
-// extract preconditions that are not part of connecting attacks or defenses
-function generatePreconditionNodes(preConditions, config) {
+function generateModelGraphCode(graph) {
     var lines = [];
-    
-    // generate nodes for free preconditions
-    for (preCondition of preConditions) {
-        appendLine(lines, 2, generateID(preCondition) + '[' + createProperty("label", wrap(preCondition), false) + config.PreConditions);
+    appendLine(lines, 1, 'subgraph cluster_' + generateID(graph.name) + ' {');
+    appendLine(lines, 2, serializeProperty(createProperty('label', '<<B>' + htmlwrap(graph.name) + '</B>>;', true)));
+    appendLine(lines, 2, 'graph[' + serializeProperties(graph.properties) + '];');
+
+    for ([nodeName, node] of graph.nodes) {
+        appendLine(lines, 2, generateNodeCode(node.id, node.label, node.properties));
     }
+
+    var allAssumptions = [];
+
+    for (subgraph of graph.subgraphs) {
+        if (subgraph.getProperty('type') == 'Assumption') {
+            allAssumptions.push(subgraph);
+        }
+
+        lines = lines.concat(generateSubGraph(subgraph));
+    }
+
+    // create edges from each assumption subgraph to each attack/defense node in this graph
+    for (assumption of allAssumptions) {
+        firstNode = assumption.nodes.values().next().value;
+        for (node of graph.nodes.values()) {
+            if (node.getProperty('type') == 'Attack' || node.getProperty('type') == 'PreEmptiveDefense' || node.getProperty('type') == 'IncidentResponse') {
+                appendLine(lines, 2, generateID(firstNode.id) + ' -> ' + node.id + '[ltail=cluster_' + assumption.id + '];');
+            }
+        }
+    }
+
+
+    for (edge of graph.edges) {
+        appendLine(lines, 2, generateID(edge.source) + ' -> ' + generateID(edge.sink) + ';');
+    }
+
+    // InitNodes are nodes that are not sinks of any edge
+    var initNodeIDs = []
+    for ([nodeName, node] of graph.nodes) {
+        var connected = false;
+        for (edge of graph.edges) {
+            if (edge.sink == node.label) {
+                connected = true;
+                break;
+            }
+        }
+        if (!connected) {
+            initNodeIDs.push(node.id);
+        }
+    }
+
+    // All assumptions and init nodes have same rank in the graph
+    rankLine = '{rank=same;';
+    for (nodeID of initNodeIDs) {
+        rankLine += nodeID + ';';
+    }
+    rankLine += '}';
+    appendLine(lines, 2, rankLine);
+
+    appendLine(lines, 1, '}');
+
+    return [initNodeIDs, lines];
+}
+
+function generateSubGraph(subgraph) {
+    var lines = [];
+    appendLine(lines, 2, 'subgraph cluster_' + subgraph.id + ' {');
+    appendLine(lines, 3, serializeProperty(createProperty('label', '<<B>' + htmlwrap(subgraph.name) + '</B>>;', true)));
+    appendLine(lines, 3, 'graph[' + serializeProperties(subgraph.properties) + '];');
+    
+    for ([nodeName, node] of subgraph.nodes) {
+        appendLine(lines, 2, generateNodeCode(node.id, node.label, node.properties));
+    }
+
+    var allAssumptions = [];
+    for (s of subgraph.subgraphs) {
+        if (s.getProperty('type') == 'Assumption') {
+            allAssumptions.push(s);
+        }
+        lines = lines.concat(generateSubGraph(s));
+    }
+
+    // create edges from each assumption subgraph to each attack/defense node in this graph
+    for (assumption of allAssumptions) {
+        firstNode = assumption.nodes.values().next().value;
+        for (node of subgraph.nodes.values()) {
+            if (node.getProperty('type') == 'Attack' || node.getProperty('type') == 'PreEmptiveDefense' || node.getProperty('type') == 'IncidentResponse') {
+                appendLine(lines, 2, generateID(firstNode.id) + ' -> ' + node.id + '[ltail=cluster_' + assumption.id + '];');
+            }
+        }
+    }
+
+    for (edge of subgraph.edges) {
+        appendLine(lines, 2, generateID(edge.source) + ' -> ' + generateID(edge.sink) + ';');
+    }
+    
+    appendLine(lines, 2, '}');
 
     return lines;
 }
 
-function collectScenarios(gherkinDocument) {
-    var scenarios = [];
-    for (child of gherkinDocument.feature.children) {
-        if (child.scenario) {
-            scenarios.push(child.scenario);
-        }
-    }
-    return scenarios;
 
+function generateLegend() {
+    legend = []
+    /*appendLineSpacer(legend);
+    appendLine(legend, 1, 'subgraph cluster_legend {');
+    appendLine(legend, 2, 'label="Legend";');
+    appendLine(legend, 2, 'graph[style="filled, rounded" rankdir="LR" fontsize="16" splines="true" overlap="false" nodesep="0.1" ranksep="0.2" fontname="Courier" fillcolor="lightyellow" color="yellow"];');
+    appendLineSpacer(legend);
+    appendLine(legend, 2, '// Legend Nodes');
+    appendLine(legend, 2, 'A[label="Pre-\\nCondition" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="lightgray" color="gray"];');
+    appendLine(legend, 2, 'B[label="Assumptions" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="dimgray" color="dimgray"];');
+    appendLine(legend, 2, 'C[label="Attack" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="red" color="red"];');
+    appendLine(legend, 2, 'D[label="Pre-emptive\\nDefense"  shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="purple" color="blue"];');
+    appendLine(legend, 2, 'E[label="Incident\\nResponse"  shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="blue" color="blue"];');
+    appendLine(legend, 2, 'F[label="Policy" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="darkolivegreen3" color="darkolivegreen3"];');
+    appendLine(legend, 2, 'G[label="Empty\\nDefense" shape="box3d" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="transparent" color="blue"];');
+    appendLine(legend, 2, 'H[label="Empty\\nAttack" shape="box3d" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="transparent" color="red"];');
+    appendLine(legend, 1, '}');
+    appendLine(legend, 1, 'A -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'B -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'C -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'D -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'E -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'F -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'G -> reality [style="invis" ltail="cluster_Legend"];');
+    appendLine(legend, 1, 'H -> reality [style="invis" ltail="cluster_Legend"];');
+    */
+    return legend;
 }
 
-function collectFreePreConditions(gherkinDocument, edgesMap) {
-    var preConditions = [];
-    scenarios = collectScenarios(gherkinDocument);
-    // remove scenarios that are sinks when participating in a chain (attack or defense)
-    for (child of gherkinDocument.feature.children) {
-        if (child.scenario) {
-            for ([source, sinks] of edgesMap) {
-                for (sink of sinks) {
-                    if (sink["sink"] == child.scenario && (sink["rule"] == "AttackChainRule" || sink["rule"] == "DefenseChainRule")) {
-                        var index = scenarios.indexOf(child.scenario);
-                        if (index > -1) {
-                            scenarios.splice(index, 1);
+//////////////////////////////////////////////
+// Functions that work on Graph objects
+
+function getUnMitigatedAttacks(graph) {
+    var unMitigatedAttacks = []
+    for ([nodeName, node] of graph.nodes) {
+        if (node.getProperty('type') != 'Attack' && node.getProperty('type') != 'EmptyAttack') {
+            continue;
+        }
+        var mitigated = false;
+        for (edge of graph.edges) {
+            if (edge.source == node.label) {
+                var sink = graph.nodes.get(edge.sink);
+                if (sink == undefined) {
+                    // look into policy subgraphs
+                    for (subgraph of graph.subgraphs) {
+                        sink = subgraph.nodes.get(edge.sink);
+                        if (sink != undefined) {
+                            break;
                         }
                     }
                 }
-            }
-        }
-    }
-    // For the remaining scenarios, extract preconditions
-    preConditions = [];
-    for (scenario of scenarios) {
-        for (step of scenario.steps) {
-            if (step.keyword == "Given") {
-                if (preConditions.indexOf(step.text) == -1) {
-                    preConditions.push(step.text);   
+                if (sink.getProperty('type') == 'PreEmptiveDefense' || 
+                    sink.getProperty('type') == 'IncidentResponse') {
+                    // attack is mitigated
+                    mitigated = true;
+                    break;
                 }
             }
         }
-    }
-    return preConditions;
-}
-
-function connectRealityToPreConditions(preConditions) {
-    var lines = [];
-    for (preCondition of preConditions) {
-        appendLine(lines, 1, 'reality -> ' + generateID(preCondition) + ';');
-    }
-    return lines;
-}
-
-// Connect attacks/defenses to reality that don't have a predecessor
-function connectRealityToInitialNodes(gherkinDocument, edgesMap, config) {
-    var lines = [];
-    for (child of gherkinDocument.feature.children) {
-        if (child.scenario) {
-            var hasPredecessor = false;
-            for ([source, sinks] of edgesMap) {
-                for (sink of sinks) {
-                    if (sink["sink"] == child.scenario) {
-                        hasPredecessor = true;
-                    }
-                }
-            }
-            if (!hasPredecessor) {
-                appendLine(lines, 1, 'reality -> ' + generateID(child.scenario.name) + ';');
-            }
+        if (!mitigated) {
+            unMitigatedAttacks.push(node);
         }
     }
-    return lines;
-}
 
-function connectPreConditionsToScenarios(preConditions, scenarios) {
-    var lines = [];
-    for (preCondition of preConditions) {
-        for (scenario of scenarios) {
-            for (step of scenario.steps) {
-                if (step.keyword == "Given" && step.text == preCondition) {
-                    appendLine(lines, 1, generateID(preCondition) + ' -> ' + generateID(scenario.name) + ';');
-                }
-            }
-        }
-    }
-    return lines;
-}
-
-function connectScenarios(edgesMap) {
-    var lines = [];
-    for ([source, sinks] of edgesMap) {
-        for (sink of sinks) {
-            appendLine(lines, 1, generateID(source.name) + ' -> ' + generateID(sink["sink"].name) + ';');
-        }
-    }
-    return lines;
+    return unMitigatedAttacks;
 }
 
 //////////////////////////////////////////////
 // Helper functions
+
+function serializeProperties(properties) {
+    var serialized = "";
+    for (property of properties) {
+        serialized += " " + serializeProperty(property);
+    }
+    return serialized.trim();
+}
+
+function serializeProperty(property) {
+    var str = "";
+    if (property.isHTML) {
+        str += property.name + "=" + property.value;
+    } else {
+        str += property.name + "=\"" + property.value + "\"";
+    }
+    return str;
+}
 
 function appendLine(lines, tabs, line) {
     lines.push(generateTabs(tabs) + line);
@@ -316,36 +239,12 @@ function appendLineSpacer(lines) {
     lines.push("");
 }
 
-function cleanup(str) {
-    // replace ".", "(", ")", "[", "]", "{", "}", "'", "`", "-", "+", "?", ",", ":" with ""
-    str = str.replace(/[.()\[\]{}'`\-+?,]/g, "");
-
-    // replace specific symbols with their alternates
-    replacements = new Map();
-    replacements.set("<", "_lt_");
-    replacements.set(">", "_gt_");
-    replacements.set("=",  "_eq_");
-    replacements.set("\"", "_quot_");
-    replacements.set("/", "_slash_");
-    for (var [key, value] of replacements) {
-        str = str.replace(key, value);
-    }
-
-    return str;
-}
-
 function generateTabs(count) {
     var tabs = '';
     for (var i = 0; i < count; i++) {
         tabs += '\t';
     }
     return tabs;
-}
-
-function generateID(text) {
-    text = cleanup(text);
-    var id = text.replace(/\s/g, '_');
-    return id;
 }
 
 // Break text into multiple lines by adding '\n' at word boundary with maximum length of 15 characters

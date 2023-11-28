@@ -28,11 +28,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/full.render.js"></script>
 
+    <!-- Entire ADM logic -->
     <script src="gherkin.bundle.js"></script> <!-- Loads model into Gherkin document -->
-    <script src="mapper.js"></script> <!-- Builds ADM graph out of a gherkin document -->
-    <script src="adm.js"></script> <!-- The main ADM processing file -->
+    <script src="gherkin_mapper.js"></script> <!-- Builds ADM graph out of a gherkin document -->
+    <script src="graph.js"></script> <!-- ADM Graph data structures -->
+    <script src="graphviz_properties.js"></script> <!-- Structures and functions for graphviz graph/node/edge properties -->
+    <script src="graph_builder.js"></script> <!-- Transforms Gherkin structures to ADM graph structures -->
     <script src="graphviz.js"></script> <!-- Translates ADM graph to graphviz digraph code -->
-    <script src="adm-ui.js"></script> <!-- The UI controller. Handles events and triggers processing/rendering -->
+    <script src="adm.js"></script> <!-- The main ADM processor -->
+    <script src="adm-ui-handlers.js"></script> <!-- All event handlers for UI controller. -->
+    <script src="adm-ui.js"></script> <!-- The UI controller. Sets up event handlers and performs UI specific logic -->
 </head>
 <body>
     <!--<div id="diagramArea" style="width: 100%; height: 100%;"></div>-->
@@ -42,7 +47,7 @@
     </div>    
     <div id="codeArea">
         <div id="codeHeader">
-            <span>&nbsp;ADM Code</span>
+            <span id="Title">&nbsp;ADM Code</span>
             <select id="themePicker">
                 <option value="default">Default</option>
                 <option value="light">Light</option>
@@ -54,8 +59,12 @@
             <button id="maximizeWidthButton">├</button>
             <button id="minimizeButton">▼</button>
         </div>
-        <textarea id="codeInput" placeholder="Write your Gherkin code here...">
+        <textarea id="codeInput" placeholder="Write your ADM code here...">
 Model: My security model
+    Assumption: Model level assumptions
+        Given Target is open to Internet
+        And Target has known vulnerabilities
+
     Attack: Unmitigated attack
         When Attack actions are performed
         Then Attacker gains access to target
@@ -66,18 +75,22 @@ Model: My security model
 
     Attack: Exploitation
         Given Reconnaissance is performed on target
+        And Recon indicated potential entry points
         When attacker exploits vulnerabilities
         Then Attacker gains access to target
 
     Defense: Reconnaissance activites are monitored
-        Given Target has unmitigated vulnerabilities
+        Given A NOC constantly monitors public traffic
         When Attacker gains knowledge about vulnerabilities about target
         Then Security Operations Center is notified
 
-    Defense: Vulnerabilities are mitigated before release to production
-        Given Target has unmitigated vulnerabilities
-        When attacker exploits vulnerabilities
-        Then security controls ensure vulnerabilities cannot be exploited
+    Policy: Company Policies
+        Assumption: Tools support
+            Given Company has invested in tools that help enforce the policy
+        Defense: Vulnerabilities are mitigated before release to production
+            Given Vulnerability scanners in CI/CD pipeline look for code level problems
+            When attacker exploits vulnerabilities
+            Then security controls ensure vulnerabilities cannot be exploited
         </textarea>
         <div class="resize-handle top"></div>
         <div class="resize-handle left"></div>

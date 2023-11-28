@@ -61,6 +61,18 @@ body, html {
     height: auto; /* Adjust the height automatically */
 }
 
+.CodeMirror-linenumbers {
+    padding-right: 1px;
+}
+
+.CodeMirror-gutters {
+    width: 45px !important;
+}
+
+.CodeMirror-errors {
+    width: 10px;
+}
+
 /* Title Bar Styles */
 #codeHeader {
     background-color: #f0f0f0;

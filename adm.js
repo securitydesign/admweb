@@ -26,7 +26,9 @@ function ADMToGraphviz(adm_content) {
         new TagBasedMatchingRule(),
     ];
     const edges = Match(gherkinDocument, rules);
-    graphLines = CreateGraphvizGraph(gherkinDocument, edges);
+    const propertiesList = new GraphvizConfig();
+    const graph = CreateGraph(gherkinDocument, edges, propertiesList);
+    graphLines = GenerateGraphvizCode(graph, propertiesList);
     
     // merge all lines into a single string
     return graphLines.join('\n');
@@ -38,8 +40,7 @@ function fixGherkinDocument(gherkinDocument) {
             fixScenario(child.scenario);
         } else if (child.background != null) {
             fixBackground(child.background);
-        }
-        else if (child.rule != null) {
+        } else if (child.rule != null) {
             fixRule(child.rule);
         }
     }
@@ -74,8 +75,9 @@ function fixRule(rule) {
 }
 
 //////////////////////////////////////////////////
-// 5 ADM Rules. Common functionality is moved to
-// base classes.
+// 5 ADM Rules. Common functionality is part to
+// base classes. Differing functionality is passed
+// as a callback function to base class.
 
 // Base class containing helper methods used by all rules
 class Rule {
@@ -110,16 +112,16 @@ class Chain extends Rule {
                     sinks.push(scenario);
                 }
             }
-            // If source is not found, don't process
+            // If source is found, map it to all sinks
             if (source != null) {
-                // map from this scenario to all other scenarios
                 for (const sink of sinks) {
                     if (graphEdges.get(source) == null) {
                         graphEdges.set(source, []);
                     }
                     graphEdges.get(source).push(
                         {"rule": this.constructor.name,
-                        "sink": sink
+                        "sink": sink,
+                        "matched": key
                     });
                 }
             }
@@ -128,7 +130,7 @@ class Chain extends Rule {
     }
 
     // Indexing is same for all chaining... go through each scenario of same 
-    // type and each of its rules.
+    // type and each of its rule block.
     //
     // NOTE: In case of attacks, this doesn't make sense. But that difference
     // is handled in indexRule() from super class (i.e., Rule).
@@ -138,7 +140,7 @@ class Chain extends Rule {
             if (child.scenario != null) {
                 this.indexScenario(index, child.scenario, scenarioType);
             } else if (child.rule != null) {
-                super.indexRule(index, child.rule, scenarioType, scenarioIndexFunc);
+                this.indexRule(index, child.rule, scenarioType, this.indexScenario);
             }
         }
         return index;
@@ -160,13 +162,16 @@ class Chain extends Rule {
     }
 
     indexRule(index, rule, scenarioType, scenarioIndexFunc) {
+        if (scenarioType != 'Defense') {
+            return;
+        }
         for (const child of rule.children) {
             if (child.scenario != null) {
                 // in ADM, Policy (i.e., rule) can only have defenses
                 if (child.scenario.keyword != 'Defense') {
                     continue;
                 }
-                scenarioIndexFunc(index, child.scenario, scenarioType);
+                scenarioIndexFunc(index, child.scenario, 'Defense');
             }
         }
     }
@@ -211,7 +216,7 @@ class AttacksAndDefenses extends Rule {
     }
 
     // Helper function to map sources to sinks
-    mapSourcesToSinks(graphEdges, sources, sinks) {
+    mapSourcesToSinks(graphEdges, sources, sinks, matchedStaetment) {
         // If source is not found, don't process
         if (sources != null) {
             // an edge from each attack to each defense
@@ -222,7 +227,8 @@ class AttacksAndDefenses extends Rule {
                     }
                     graphEdges.get(source).push(
                         {"rule": this.constructor.name,
-                        "sink": sink
+                        "sink": sink,
+                        "matched": matchedStaetment
                     });
                 }
             }
@@ -253,7 +259,7 @@ class FromAttackToDefense extends AttacksAndDefenses {
                     sinks.push(scenario);
                 }
             }
-            super.mapSourcesToSinks(graphEdges, sources, sinks);
+            super.mapSourcesToSinks(graphEdges, sources, sinks, key);
         }
         return graphEdges;
     }
@@ -337,7 +343,7 @@ class TagBasedMatchingRule {
         let graph = new Map();
         // Build a map of tag to scenarios having the same tag
         let tagToScenarios = new Map();
-        for (const child of gherkinDoc.feature.children) {
+        for (var child of gherkinDoc.feature.children) {
             if (child.scenario != null) {
                 for (const tag of child.scenario.tags) {
                     if (tagToScenarios.get(tag.name) == null) {
@@ -346,13 +352,13 @@ class TagBasedMatchingRule {
                     tagToScenarios.get(tag.name).push(child.scenario);
                 }
             } else if (child.rule != null) {
-                for (const child of child.rule.children) {
-                    if (child.scenario != null) {
-                        for (const tag of child.scenario.tags) {
+                for (const c of child.rule.children) {
+                    if (c.scenario != null) {
+                        for (const tag of c.scenario.tags) {
                             if (tagToScenarios.get(tag.name) == null) {
                                 tagToScenarios.set(tag.name, []);
                             }
-                            tagToScenarios.get(tag.name).push(child.scenario);
+                            tagToScenarios.get(tag.name).push(c.scenario);
                         }
                     }
                 }
@@ -377,7 +383,8 @@ class TagBasedMatchingRule {
                     }
                     graph.get(source).push(
                         {"rule": this.constructor.name,
-                        "sink": sink
+                        "sink": sink,
+                        "matched": key
                     });
                 }
             }
