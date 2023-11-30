@@ -31,9 +31,12 @@ function cursorActivityHandler(instance, changeObj) {
     }
 }
 
-function contentChangeHandler(instance) {
+function contentChangeHandler(editor) {
+    // push changes to local storage
+    localStorage.setItem('adm_content', editor.getValue());
+
     // get the contents of CodeMirror instance as a string
-    const adm_content = instance.getValue();
+    const adm_content = editor.getValue();
     RenderSVGFromADM(adm_content);
 }
 
@@ -74,6 +77,10 @@ function mousemoveForDragging(e) {
 
         lastX = e.clientX;
         lastY = e.clientY;
+
+        // Save position to localStorage
+        localStorage.setItem('canvasPosX', canvasContainer.style.left);
+        localStorage.setItem('canvasPosY', canvasContainer.style.top);
     }
 }
 
@@ -185,6 +192,11 @@ function zoomAtPoint(scaleFactor, mouseX, mouseY) {
     diagramArea.style.left = `${currentLeft - newPositionX}px`;
     diagramArea.style.top = `${currentTop - newPositionY}px`;
 
+    // Save scale to localStorage
+    localStorage.setItem('diagramScale', currentScale);
+    localStorage.setItem('diagramPosX', diagramArea.style.left);
+    localStorage.setItem('diagramPosY', diagramArea.style.top);
+
     // Adjust background grid size
     const newBackgroundSize = 100 * currentScale; // Assuming 100px is the initial size
     canvasContainer.style.backgroundSize = `${newBackgroundSize}px ${newBackgroundSize}px`;
@@ -193,4 +205,58 @@ function zoomAtPoint(scaleFactor, mouseX, mouseY) {
 function updateZoomPercentage(scale) {
     const zoomPercent = Math.round(scale * 100); // Convert scale to percentage
     document.getElementById('zoomPercentage').textContent = zoomPercent + '%';
+}
+
+// 'Open' handlers
+function openButtonHandler() {
+    document.getElementById('openFile').click();
+}
+function openFileHandler(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var contents = e.target.result;
+        editor.setValue(contents);
+    };
+    reader.readAsText(file);
+
+    // reset canvas position and zoom levels.
+    resetCanvas();
+}
+
+function resetCanvas() {
+    // reset canvasContainer and diagramArea
+    canvasContainer.style.top = '50%';
+    canvasContainer.style.left = '50%';
+    diagramArea.style.left = '0px';
+    diagramArea.style.top = '0px';
+    diagramArea.width = '100%';
+    diagramArea.height = '100%';
+    currentScale = 1;
+    updateZoomPercentage(currentScale);
+    diagramArea.style.transform = `scale(${currentScale})`;
+
+    // clear localstorage parameters
+    localStorage.removeItem('canvasPosX');
+    localStorage.removeItem('canvasPosY');
+    localStorage.removeItem('diagramScale');
+    localStorage.removeItem('diagramPosX');
+    localStorage.removeItem('diagramPosY');
+}
+
+// 'Save' handler
+function saveButtonHandler() {
+    var text = editor.getValue();
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', 'adm_model.adm');
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
 }

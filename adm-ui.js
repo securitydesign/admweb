@@ -58,22 +58,57 @@ CodeMirror.defineMode("adm", function(config) {
 // Connect event listeners on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize CodeMirror on a textarea
-    var editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
+    editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
         mode: 'adm',
         lineNumbers: true,
         gutters: ["CodeMirror-linenumbers", 'CodeMirror-errors'],
         theme: 'eclipse'
     });
 
+    const canvasContainer = document.getElementById('canvasContainer');
+
+    // Load saved content from local storage
+    var savedContent = localStorage.getItem('adm_content');
+    if (savedContent) {
+        editor.setValue(savedContent);
+    }
+
     // Render ADM as part of page load
     const adm_content = editor.getValue();
     RenderSVGFromADM(adm_content);
+
+    // Restore positions from localStorage
+    var savedCanvasPosX = localStorage.getItem('canvasPosX');
+    var savedCanvasPosY = localStorage.getItem('canvasPosY');
+    if (savedCanvasPosX !== null && savedCanvasPosY !== null) {
+        var canvasPosX = parseFloat(savedCanvasPosX);
+        var canvasPosY = parseFloat(savedCanvasPosY);
+
+        canvasContainer.style.left = canvasPosX + 'px';
+        canvasContainer.style.top = canvasPosY + 'px';
+    }
+
+    // Restore properties from localStorage
+    var savedPosX = localStorage.getItem('diagramPosX');
+    var savedPosY = localStorage.getItem('diagramPosY');
+    var savedScale = localStorage.getItem('diagramScale');
+
+    if (savedPosX !== null && savedPosY !== null && savedScale !== null) {
+        var posX = parseFloat(savedPosX);
+        var posY = parseFloat(savedPosY);
+        var scale = parseFloat(savedScale);
+
+        diagramArea.style.left = posX + 'px';
+        diagramArea.style.top = posY + 'px';
+        currentScale = scale;
+        updateZoomPercentage(scale);
+        diagramArea.style.transform = `scale(${currentScale})`;
+    }
 
     editor.on('cursorActivity', cursorActivityHandler); // when a chunk of text is selected
     editor.on('change', contentChangeHandler); // re-render everytime content changes
 
     // canvas dragging event handlers (to move the image around)
-    const canvasContainer = document.getElementById('canvasContainer');
     canvasContainer.addEventListener('mousedown', mouseDownForDragging);
     document.addEventListener('mouseup', mouseUpForDragging);
     document.addEventListener('mousemove',  mousemoveForDragging);
@@ -85,6 +120,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('themePicker').addEventListener('change', function (event) {
         editor.setOption('theme', event.target.value);
     });
+
+    // Open File
+    document.getElementById('open').addEventListener('click', openButtonHandler);
+    document.getElementById('openFile').addEventListener('change', openFileHandler);
+
+    // Save file
+    document.getElementById('save').addEventListener('click', saveButtonHandler);
     
     // Maximize, minimize buttons for code area
     var maximizeHeightButton = document.getElementById('maximizeHeightButton');

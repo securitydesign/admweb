@@ -110,8 +110,8 @@ body, html {
     margin-left: 5px; /* Add some space between buttons */
 }
 
-/* Minimize Button Styles */
-#minimizeButton {
+/* Button Styles */
+#minimizeButton, #maximizeWidthButton, #maximizeHeightButton, #open, #save {
     background: none;
     border: none;
     cursor: pointer;
