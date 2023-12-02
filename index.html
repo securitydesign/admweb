@@ -8,6 +8,9 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="adm.css">
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24}</style>
 
     <!-- CodeMirror Core CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
@@ -49,7 +52,10 @@
     </div>    
     <div id="codeArea">
         <div id="codeHeader">
-            <span id="Title">&nbsp;ADM Code</span>
+            <button id="open" class="material-symbols-outlined">upload</button>
+            <input type="file" id="openFile" style="display: none;">
+            <button id="save" class="material-symbols-outlined">download</button>
+            <span></span>
             <select id="themePicker">
                 <option value="default">Default</option>
                 <option value="light">Light</option>
@@ -57,12 +63,12 @@
                 <option value="gruvbox-dark">Gruvbox</option>
                 <option value="eclipse" selected>Eclipse</option>
             </select>
-            <button id="open">📂</button>
-            <input type="file" id="openFile" style="display: none;">
-            <button id="save">💾</button>
-            <button id="maximizeHeightButton">⏉</button>
-            <button id="maximizeWidthButton">├</button>
-            <button id="minimizeButton">▼</button>
+            <span></span>
+            <button id="zoomInButton" class="material-symbols-outlined">zoom_in</button>
+            <button id="zoomOutButton" class="material-symbols-outlined">zoom_out</button>
+            <button id="maximizeHeightButton" class="material-symbols-outlined">bottom_panel_open</button>
+            <button id="maximizeWidthButton" class="material-symbols-outlined">right_panel_open</button>
+            <button id="minimizeButton" class="material-symbols-outlined">expand_more</button>
         </div>
         <textarea id="codeInput" placeholder="Write your ADM code here...">
 Model: My security model
@@ -102,7 +108,7 @@ Model: My security model
         <div class="resize-handle corner"></div>
     </div>
     <div id="statusBar">
-        🔍<span id="zoomPercentage">100%</span>
+        <span id="zoomPercentage">100%</span>
     </div>
 </body>
 </html>

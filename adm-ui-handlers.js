@@ -31,22 +31,74 @@ function cursorActivityHandler(instance, changeObj) {
     }
 }
 
+// Autoindent when user types ENTER. This is to make it easier to write models
+// on tablet/mobile.
+function keydownHandler(cm, event) {
+    regex = /^(Model:|\s*Attack:|\s*Defense:|\s*Assumption:|\s*Policy:)/;
+    if (event.key === 'Enter') {
+        let cursor = cm.getCursor();
+        let line = cm.getLine(cursor.line);
+        let match = line.match(regex);
+        if (match) {
+            let currentIndent = line.search(/\S|$/) / 2;
+            let indent;
+            switch (match[0].trim()) {
+                case 'Model:':
+                case 'Attack:':
+                case 'Defense:':
+                case 'Assumption:':
+                case 'Policy:':
+                    indent = currentIndent + 2;
+                    break;
+                default:
+                    indent = 0;
+            }
+            console.log('indent: ', indent)
+            cm.operation(function() {
+                cm.replaceSelection("\n" + Array(indent * cm.getOption("indentUnit") + 1).join(" "));
+            });
+            event.preventDefault();
+        }
+    }
+}
+
 function contentChangeHandler(editor) {
     // push changes to local storage
     localStorage.setItem('adm_content', editor.getValue());
 
     // get the contents of CodeMirror instance as a string
     const adm_content = editor.getValue();
+    if (adm_content === '') {
+        // clear canvas if there is no content
+        clearCanvas();
+        return;
+    }
     RenderSVGFromADM(adm_content);
 }
 
 let isDragging = false;
 let lastX, lastY;
-
-function mouseDownForDragging(e) {
+let pinchDistance = 0;
+function moveStartHandler(e) {
+    e.preventDefault(); // Prevent the default scrolling behavior
     isDragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
+    if (e.constructor.name == 'TouchEvent') {
+        switch (e.touches.length) {
+            case 1: // Single finger
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+            case 2: // Pinch
+                // Calculate the distance between the two fingers
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                pinchDistance = Math.sqrt(dx * dx + dy * dy);
+                break;
+        }
+        
+    } else if (e.constructor.name == 'MouseEvent') {
+        lastX = e.clientX;
+        lastY = e.clientY;
+    }
     canvasContainer.style.cursor = 'grabbing';
     // Add the class to disable text selection when dragging starts
     document.body.classList.add('no-select');
@@ -54,7 +106,7 @@ function mouseDownForDragging(e) {
     document.getElementById('codeInput').classList.add('no-select');
 }
 
-function mouseUpForDragging() {
+function moveEndHandler() {
     isDragging = false;
     canvasContainer.style.cursor = 'grab';
     // Remove the class to re-enable text selection when dragging ends
@@ -63,10 +115,33 @@ function mouseUpForDragging() {
     document.getElementById('codeInput').classList.remove('no-select');
 }
 
-function mousemoveForDragging(e) {
+function moveHandler(e) {
+    var clientX, clientY;
+    if (e.constructor.name == 'TouchEvent') {
+        switch (e.touches.length) {
+            case 1: // Single finger
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                break;
+            case 2: // Pinch
+                e.preventDefault(); // Prevent the default pinch behavior
+                // Calculate the distance between the two fingers
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const newPinchDistance = Math.sqrt(dx * dx + dy * dy);
+                const scaleFactor = newPinchDistance / pinchDistance;
+                pinchDistance = newPinchDistance;
+                zoomAtPoint(scaleFactor, (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
+                return;
+        }
+    } else if (e.constructor.name == 'MouseEvent') {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+
     if (isDragging) {
-        let deltaX = e.clientX - lastX;
-        let deltaY = e.clientY - lastY;
+        let deltaX = clientX - lastX;
+        let deltaY = clientY - lastY;
 
         // Move the container
         let currentLeft = canvasContainer.offsetLeft + deltaX;
@@ -75,8 +150,8 @@ function mousemoveForDragging(e) {
         canvasContainer.style.left = currentLeft + 'px';
         canvasContainer.style.top = currentTop + 'px';
 
-        lastX = e.clientX;
-        lastY = e.clientY;
+        lastX = clientX;
+        lastY = clientY;
 
         // Save position to localStorage
         localStorage.setItem('canvasPosX', canvasContainer.style.left);
@@ -184,22 +259,24 @@ function zoomAtPoint(scaleFactor, mouseX, mouseY) {
     const newPositionY = (relativeY * scaleFactor) - relativeY;
 
     // Update current scale and position
-    currentScale = newScale;
-    updateZoomPercentage(currentScale); // Update the zoom percentage display
-    const currentLeft = parseFloat(diagramArea.style.left || 0);
-    const currentTop = parseFloat(diagramArea.style.top || 0);
-    diagramArea.style.transform = `scale(${currentScale})`;
-    diagramArea.style.left = `${currentLeft - newPositionX}px`;
-    diagramArea.style.top = `${currentTop - newPositionY}px`;
+    if (newScale > 0.2 && newScale < 4) {
+        currentScale = newScale;
+        updateZoomPercentage(currentScale); // Update the zoom percentage display
+        const currentLeft = parseFloat(diagramArea.style.left || 0);
+        const currentTop = parseFloat(diagramArea.style.top || 0);
+        diagramArea.style.transform = `scale(${currentScale})`;
+        diagramArea.style.left = `${currentLeft - newPositionX}px`;
+        diagramArea.style.top = `${currentTop - newPositionY}px`;
 
-    // Save scale to localStorage
-    localStorage.setItem('diagramScale', currentScale);
-    localStorage.setItem('diagramPosX', diagramArea.style.left);
-    localStorage.setItem('diagramPosY', diagramArea.style.top);
+        // Save scale to localStorage
+        localStorage.setItem('diagramScale', currentScale);
+        localStorage.setItem('diagramPosX', diagramArea.style.left);
+        localStorage.setItem('diagramPosY', diagramArea.style.top);
 
-    // Adjust background grid size
-    const newBackgroundSize = 100 * currentScale; // Assuming 100px is the initial size
-    canvasContainer.style.backgroundSize = `${newBackgroundSize}px ${newBackgroundSize}px`;
+        // Adjust background grid size
+        const newBackgroundSize = 25 * currentScale; // Assuming 100px is the initial size
+        canvasContainer.style.backgroundSize = `${newBackgroundSize}px ${newBackgroundSize}px`;
+    }
 }
 
 function updateZoomPercentage(scale) {

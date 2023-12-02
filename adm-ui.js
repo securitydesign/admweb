@@ -57,12 +57,17 @@ CodeMirror.defineMode("adm", function(config) {
 
 // Connect event listeners on page load
 document.addEventListener('DOMContentLoaded', function() {
+    var theme = localStorage.getItem('theme');
+    if (theme === null) {
+        theme = 'eclipse';
+    }
+    themePicker.value = theme;
     // Initialize CodeMirror on a textarea
     editor = CodeMirror.fromTextArea(document.getElementById('codeInput'), {
         mode: 'adm',
         lineNumbers: true,
         gutters: ["CodeMirror-linenumbers", 'CodeMirror-errors'],
-        theme: 'eclipse'
+        theme: theme
     });
 
     const canvasContainer = document.getElementById('canvasContainer');
@@ -106,19 +111,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     editor.on('cursorActivity', cursorActivityHandler); // when a chunk of text is selected
+    editor.on('keydown', keydownHandler); // when a key is pressed
     editor.on('change', contentChangeHandler); // re-render everytime content changes
 
     // canvas dragging event handlers (to move the image around)
-    canvasContainer.addEventListener('mousedown', mouseDownForDragging);
-    document.addEventListener('mouseup', mouseUpForDragging);
-    document.addEventListener('mousemove',  mousemoveForDragging);
+    canvasContainer.addEventListener('mousedown', moveStartHandler);
+    document.addEventListener('mouseup', moveEndHandler);
+    document.addEventListener('mousemove',  moveHandler);
+
+    canvasContainer.addEventListener('touchstart', moveStartHandler);
+    document.addEventListener('touchend', moveEndHandler);
+    document.addEventListener('touchmove',  moveHandler);
 
     // zoom-in and zoom-out
     canvasContainer.addEventListener('wheel', zoomHandler);
+    
+    document.getElementById('zoomOutButton').addEventListener('click', function() {
+        zoomAtPoint(0.96, window.innerWidth / 2, window.innerHeight / 2);
+    });
+    
+    document.getElementById('zoomInButton').addEventListener('click', function() {
+        zoomAtPoint(1.04, window.innerWidth / 2, window.innerHeight / 2);
+    });
 
     // Theme Picker
     document.getElementById('themePicker').addEventListener('change', function (event) {
         editor.setOption('theme', event.target.value);
+        localStorage.setItem('theme', event.target.value);
     });
 
     // Open File
@@ -140,12 +159,12 @@ document.addEventListener('DOMContentLoaded', function() {
     maximizeHeightButton.addEventListener('click', function() {
         if (!isHeightMaximized) {
             previousHeight = codeArea.style.height;
-            codeArea.style.height = '98vh';
-            maximizeHeightButton.textContent = '⏊';
+            codeArea.style.height = '85vh';
+            maximizeHeightButton.textContent = 'bottom_panel_close';
             isHeightMaximized = true;
         } else {
             codeArea.style.height = previousHeight; // Reset to previous height
-            maximizeHeightButton.textContent = '⏉';
+            maximizeHeightButton.textContent = 'bottom_panel_open';
             isHeightMaximized = false;
         }
         editor.refresh();
@@ -155,11 +174,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isWidthMaximized) {
             previousWidth = codeArea.style.width;
             codeArea.style.width = '98vw';
-            maximizeWidthButton.textContent = '┤';
+            maximizeWidthButton.textContent = 'right_panel_close';
             isWidthMaximized = true;
         } else {
             codeArea.style.width = previousWidth; // Reset to previous width
-            maximizeWidthButton.textContent = '├';
+            maximizeWidthButton.textContent = 'right_panel_open';
             isWidthMaximized = false;
         }
         editor.refresh();
@@ -169,10 +188,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (codeArea.style.height !== '40px') {
             previousHeight = codeArea.style.height; // Update previous height before minimizing
             codeArea.style.height = '40px';
-            minimizeButton.textContent = '▲'; // Change to up arrowhead
+            minimizeButton.textContent = 'expand_less'; // Change to up arrowhead
         } else {
             codeArea.style.height = previousHeight; // Restore to previous height
-            minimizeButton.textContent = '▼'; // Change to down arrowhead
+            minimizeButton.textContent = 'expand_more'; // Change to down arrowhead
         }
         editor.refresh();
     });

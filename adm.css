@@ -22,18 +22,20 @@ body, html {
     /* Set a default initial size or make it big enough */
     width: 3000px;
     height: 3000px;
+
+    background-image: radial-gradient(circle, #CCC 1px, transparent 1px);
+    background-size: 22px 22px; /* Adjust this to change the size of the grid cells */
 }
 
 #diagramArea {
     position: absolute;
-    /*top: 0;
-    left: 0;*/
     transform-origin: 0 0;
     width: 100%;
     height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
+    touch-action: pinch-zoom;
 }
 
 /* Code Area Styles */
@@ -41,12 +43,13 @@ body, html {
     position: absolute;
     display: flex;
     flex-direction: column;
-    bottom: 0;
-    right: 0;
-    width: 600px; /* Initial width */
-    height: 400px; /* Initial height */
-    max-width: 100vw; /* 98% of the viewport width */
-    max-height: 100vh; /* 98% of the viewport height */
+    bottom: 10px;
+    right: 10px;
+    border-radius: 10px;
+    width: 95%;
+    height: 400px;
+    max-width: 100vw;
+    max-height: 100vh;
     background-color: white;
     box-shadow: 0 0 23px rgba(117, 117, 117, 0.5);
     border: none;
@@ -54,6 +57,12 @@ body, html {
     resize: none;
     overflow: hidden;
     transition: width 0.3s ease, height 0.3s ease; /* Smooth transition for width and height */
+}
+
+@media (min-width: 768px) {
+    #codeArea {
+        width: 600px; /* Initial width */
+    }
 }
 
 .CodeMirror {
@@ -75,8 +84,10 @@ body, html {
 
 /* Title Bar Styles */
 #codeHeader {
-    background-color: #f0f0f0;
+    background-color: #d0d0d0;
     padding: 5px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
     flex-shrink: 0; /* Prevent the header from resizing */
     display: flex;
     align-items: center;
@@ -92,8 +103,7 @@ body, html {
 }
 
 #themePicker {
-    margin-right: 30px;
-    width: 50px; /* Fixed width */
+    width: 30px;
     flex-grow: 0; /* Prevent the picker from growing */
     flex-shrink: 0; /* Prevent the picker from shrinking */
 }
@@ -107,17 +117,20 @@ body, html {
 }
 
 #codeHeader button {
-    margin-left: 5px; /* Add some space between buttons */
+    margin-left: 0px; /* Add some space between buttons */
 }
 
 /* Button Styles */
-#minimizeButton, #maximizeWidthButton, #maximizeHeightButton, #open, #save {
+#minimizeButton, #maximizeWidthButton, #maximizeHeightButton, #open, #save, #zoomOutButton, #zoomInButton {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.2em;
+    font-size: 1.4em;
     appearance: none;
     -webkit-appearance: none;
+    margin: 0;
+    padding-right: 4px;
+    padding-left: 4px;
 }
 
 /* Text Area Styles */
@@ -126,6 +139,8 @@ body, html {
     width: 100%;
     height: 100%;
     border: none;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
     resize: none; /* Disable resizing */
     padding: 5px;
     box-sizing: border-box;
@@ -134,7 +149,7 @@ body, html {
 /* Resizable Handle Styles */
 .resize-handle {
     position: absolute;
-    background-color: darkgray;
+    background-color: transparent;
     z-index: 10; /* Ensure they are above other elements */
 }
 
@@ -161,15 +176,15 @@ body, html {
     left: 0;
     cursor: nwse-resize;
     background-color: transparent; /* To create an inverted L shape */
-    border-top: 1px solid darkgray;
-    border-left: 1px solid darkgray;
+    border-top: 1px solid transparent;
+    border-left: 1px solid transparent;
 }
 
 #statusBar {
     position: fixed;
-    left: 0;
-    bottom: 0;
-    border-radius: 0px 10px 0px 0px;
+    left: 10px;
+    bottom: 10px;
+    border-radius: 25px 25px 25px 25px;
     background-color: white; /* Example background color */
     color: #333; /* Example text color */
     text-align: left;
@@ -177,7 +192,7 @@ body, html {
     box-shadow: 0 0 23px rgba(117, 117, 117, 0.5);
     font-family: Arial, Helvetica, sans-serif;
     font-weight: bold;
-    font-size: small;
+    font-size: 16px;
 }
 
 .no-select {
