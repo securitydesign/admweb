@@ -303,6 +303,35 @@ function openFileHandler(e) {
     resetCanvas();
 }
 
+async function helpButtonHandler() {
+    let markdown = ``;
+    let response = await fetch('doc/help.md');
+    if (response.ok) {
+        markdown = await response.text();
+    }
+
+    Prism.languages.custom = {
+        'keyword': /^(\s*Model:|\s*Attack:|\s*Defense:|\s*Assumption:|\s*Policy:|\s*Given|\s*When|\s*Then|\s*And|\s*But|\s*\@\w+)/gm,
+        'string': /\[.*?\]/g
+    };
+    showdown.extension('prism', function() {
+        return [{
+            type: 'output',
+            filter: function(text, converter, options) {
+                return text.replace(/<pre><code\b[^>]*>([\s\S]*?)<\/code><\/pre>/g, function(match, code) {
+                    code = showdown.helper.unescapeHTMLEntities(code);
+                    return '<pre><code class="language-custom">' + Prism.highlight(code, Prism.languages.custom) + '</code></pre>';
+                });
+            }
+        }];
+    });
+
+    let converter = new showdown.Converter({ extensions: [/*'collapseh2', 'collapseh3',*/ 'prism'] });
+    let html = converter.makeHtml(markdown);
+    document.getElementById('textContent').innerHTML = html;
+    document.getElementById('helpModal').style.display = 'block';
+}
+
 function resetCanvas() {
     // reset canvasContainer and diagramArea
     canvasContainer.style.top = '50%';

@@ -151,6 +151,20 @@ document.addEventListener('DOMContentLoaded', function() {
     var maximizeHeightButton = document.getElementById('maximizeHeightButton');
     var maximizeWidthButton = document.getElementById('maximizeWidthButton');
     var minimizeButton = document.getElementById('minimizeButton');
+    
+    // Help button
+    document.getElementById('help').addEventListener('click', helpButtonHandler);
+    // Close the modal when the 'X' button is clicked
+    document.getElementById('closeHelp').addEventListener('click', function() {
+        document.getElementById('helpModal').style.display = 'none';
+    });
+    // Close the modal when a click occurs outside the modal
+    window.addEventListener('click', function(event) {
+        if (event.target == document.getElementById('helpModal')) {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+    });
+    
     var codeArea = document.getElementById('codeArea');
 
     var isHeightMaximized = false;
