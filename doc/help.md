@@ -16,7 +16,7 @@ The simplest of the models have a model title, one or more `Attack:` blocks and 
         Then [expected result statement]
 ```
 
-You can have multiple `Given`, `When` and `Then` statements by adding `And` statements after each of these section. For example -
+You can have multiple `Given`, `When` and `Then` statements by adding `And` statements after each section. For example -
 ```
 Attack: [Attack Title]
     Given [precondition statement]
@@ -29,11 +29,13 @@ Attack: [Attack Title]
 
 ## How to connect attacks and defenses
 
-Please note that statement matching is case-sensitive. So 'Target' in one statement will not match 'target' in another. Print the quick reference card below for understand the 4 rules of ADM.
+Please note that statement matching is case-sensitive. So 'Target' in one statement will not match 'target' in another.
 
 ### **Chain Rule**: Use `[title]` in `Given [precondition statement]` of another
 
-NOTE: This rule applies only to blocks of same type i.e., attack → attack or defense → defense. To chain attacks/defenses, title of one should appear in `Given` statement of another.
+*NOTE: Chain rule applies only to blocks of same type i.e., attack → attack or defense → defense.*
+
+To chain attacks/defenses, title of one should appear in `Given` statement of another.
 
 ```
 Attack: Target is scanned
