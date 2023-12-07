@@ -143,9 +143,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open File
     document.getElementById('open').addEventListener('click', openButtonHandler);
     document.getElementById('openFile').addEventListener('change', openFileHandler);
-
     // Save file
     document.getElementById('save').addEventListener('click', saveButtonHandler);
+    // Palette
+    document.getElementById('colors').addEventListener('click', paletteHandler);
     
     // Maximize, minimize buttons for code area
     var maximizeHeightButton = document.getElementById('maximizeHeightButton');

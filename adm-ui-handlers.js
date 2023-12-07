@@ -366,3 +366,19 @@ function saveButtonHandler() {
 
     document.body.removeChild(element);
 }
+
+// 'Palette' handler
+function paletteHandler() {
+    var colorLegend = document.getElementById('colorLegend');
+    var colorsButton = document.getElementById('colors');
+    if (colorLegend.style.display === 'none' || colorLegend.style.display === '') {
+        colorLegend.style.display = 'flex';
+        colorsButton.style.color = 'lightgreen';
+        colorsButton.style.textShadow = '0 0 8px rgba(117, 117, 117, 0.7)';
+    } else {
+        // Revert back to default color
+        colorLegend.style.display = 'none';
+        colorsButton.style.color = '';
+        colorsButton.style.textShadow = '';
+    }
+}

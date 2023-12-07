@@ -121,7 +121,7 @@ body, html {
 }
 
 /* Button Styles */
-#minimizeButton, #maximizeWidthButton, #maximizeHeightButton, #open, #save, #help, #zoomOutButton, #zoomInButton {
+#minimizeButton, #maximizeWidthButton, #maximizeHeightButton, #open, #save, #help, #colors, #zoomOutButton, #zoomInButton {
     background: none;
     border: none;
     cursor: pointer;
@@ -217,7 +217,7 @@ body, html {
     top: 0;
     left: 0;
     right: 0;
-    display: flex;
+    display: none;
     justify-content: space-around;
     margin-left: 10px;
     margin-right: 10px;
