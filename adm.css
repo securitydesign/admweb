@@ -212,6 +212,88 @@ body, html {
     box-sizing: border-box;
 }
 
+#colorLegend {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    margin-left: 10px;
+    margin-right: 10px;
+    height: 40px;
+}
+
+@media screen and (max-width: 600px) {
+    #colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
+        font-size: 8px;
+    }
+}
+
+#colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
+    flex: 1;
+    margin: 8px 10px 0 10px;
+    height: 25px;
+    border-radius: 50px;
+    box-shadow: 0 0 10px rgba(117, 117, 117, 1.0);
+}
+
+#colorLegend .AssumptionBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: bold;
+    color: white;
+    background-color: dimgray;
+}
+
+#colorLegend .PreConditionBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: black;
+    background-color: lightgray;
+}
+
+#colorLegend .PolicyBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: bold;
+    color: black;
+    background-color: rgb(162, 205, 90); /* darkolivegreen3 in Graphviz */
+}
+
+#colorLegend .AttackBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: white;
+    background-color: red;
+}
+
+#colorLegend .PreEmptiveDefenseBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: white;
+    background-color: rgb(179, 0, 179);
+}
+
+#colorLegend .IncidentResponseBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: white;
+    background-color: blue;
+}
+
 /* Resizable Handle Styles */
 .resize-handle {
     position: absolute;
