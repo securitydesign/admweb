@@ -22,56 +22,74 @@ function generateDigraphCode(id, unmitigatedAttacks, graph, config) {
     appendLineSpacer(lines);
     appendLine(lines, 1, '// Start and end nodes');
     appendLine(lines, 1, generateNodeCode('reality', 'Reality', config.Reality));
-    if (unmitigatedAttacks.length > 0) {
-        appendLine(lines, 1, generateNodeCode('attacker_wins', 'ATTACKER WINS!', config.AttackerWins));
-    }
 
-    [initNodes, results] = generateModelGraphCode(graph);
+    [initNodes, results] = generateModelGraphCode(graph, unmitigatedAttacks);
     lines = lines.concat(results);
 
     for (preCondition of initNodes) {
         appendLine(lines, 1, 'reality -> ' + preCondition);
     }
 
-    // connect unmitigated attacks to attacker wins node
-    for (attack of unmitigatedAttacks) {
-        appendLine(lines, 1, generateID(attack.label) + ' -> attacker_wins [penwidth="4" color="red"];');
-    }
     lines = lines.concat("}");
 
     return lines;
 }
 
-function generateModelGraphCode(graph) {
+function generateModelGraphCode(graph, unmitigatedAttacks) {
     var lines = [];
     appendLine(lines, 1, 'subgraph cluster_' + generateID(graph.name) + ' {');
-    appendLine(lines, 2, serializeProperty(createProperty('label', '<<B>' + htmlwrap(graph.name) + '</B>>;', true)));
-    appendLine(lines, 2, 'graph[' + serializeProperties(graph.properties) + '];');
-
-    for ([nodeName, node] of graph.nodes) {
-        appendLine(lines, 2, generateNodeCode(node.id, node.label, node.properties));
-    }
-
-    var allAssumptions = [];
-
+    allAssumptions = [];
     for (subgraph of graph.subgraphs) {
         if (subgraph.getProperty('type') == 'Assumption') {
-            allAssumptions.push(subgraph);
-        }
-
-        lines = lines.concat(generateSubGraph(subgraph));
-    }
-
-    // create edges from each assumption subgraph to each attack/defense node in this graph
-    for (assumption of allAssumptions) {
-        firstNode = assumption.nodes.values().next().value;
-        for (node of graph.nodes.values()) {
-            if (node.getProperty('type') == 'Attack' || node.getProperty('type') == 'PreEmptiveDefense' || node.getProperty('type') == 'IncidentResponse') {
-                appendLine(lines, 2, generateID(firstNode.id) + ' -> ' + node.id + '[ltail=cluster_' + assumption.id + '];');
+            for (node of subgraph.nodes.values()) {
+                allAssumptions.push(node.label);
             }
         }
     }
+    labelLines = [];
+    appendLine(labelLines, 0, "<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\">");
+    appendLine(labelLines, 3, "<TR><TD><FONT POINT-SIZE=\"24\"><B>" + htmlwrap(graph.name) + "</B></FONT></TD></TR>");
+    appendLine(labelLines, 3, "<TR><TD></TD></TR>");
+    if (allAssumptions.length > 0) {
+        appendLine(labelLines, 3, "<TR><TD><FONT POINT-SIZE=\"14\" COLOR=\"brown\"><B>Assumptions</B></FONT></TD></TR>");
+        appendLine(labelLines, 3, "<TR><TD BORDER=\"1\" SIDES=\"T\"></TD></TR>");
+        for (assumption of allAssumptions) {
+            appendLine(labelLines, 3, "<TR><TD ALIGN=\"LEFT\"><FONT POINT-SIZE=\"14\" COLOR=\"brown\">• " + assumption + "</FONT></TD></TR>")
+        }
+        appendLine(labelLines, 3, "<TR><TD BORDER=\"1\" SIDES=\"T\"><BR/></TD></TR>");
+    }
+    appendLine(labelLines, 2, "</TABLE>")
+    appendLine(lines, 2, serializeProperty(createProperty('label', '<' + labelLines.join('\n') + '>;', true)));
+    appendLine(lines, 2, 'graph[' + serializeProperties(graph.properties) + '];');
 
+    unmitigatedAttackProperties = (new GraphvizConfig()).UnmitigatedAttack;
+
+    for ([nodeName, node] of graph.nodes) {
+        if (node.getProperty('type') == 'Attack') {
+            found = false;
+            for (attack of unmitigatedAttacks) {
+                if (attack.label == node.label) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                appendLine(lines, 2, generateNodeCode(node.id, node.label, unmitigatedAttackProperties));
+            } else {
+                appendLine(lines, 2, generateNodeCode(node.id, node.label, node.properties));
+            }
+        } else {
+            appendLine(lines, 2, generateNodeCode(node.id, node.label, node.properties));
+        }
+    }
+
+    //var allAssumptions = [];
+
+    for (subgraph of graph.subgraphs) {
+        if (subgraph.getProperty('type') != 'Assumption') {
+            lines = lines.concat(generateSubGraph(subgraph));
+        }
+    }
 
     for (edge of graph.edges) {
         appendLine(lines, 2, generateID(edge.source) + ' -> ' + generateID(edge.sink) + ';');
@@ -108,28 +126,38 @@ function generateModelGraphCode(graph) {
 function generateSubGraph(subgraph) {
     var lines = [];
     appendLine(lines, 2, 'subgraph cluster_' + subgraph.id + ' {');
-    appendLine(lines, 3, serializeProperty(createProperty('label', '<<B>' + htmlwrap(subgraph.name) + '</B>>;', true)));
+    allAssumptions = [];
+    for (s of subgraph.subgraphs) {
+        if (s.getProperty('type') == 'Assumption') {
+            for (node of s.nodes.values()) {
+                allAssumptions.push(node.label);
+            }
+        }
+    }
+    labelLines = [];
+    appendLine(labelLines, 0, "<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\">");
+    appendLine(labelLines, 3, "<TR><TD><FONT POINT-SIZE=\"18\"><B>" + htmlwrap(subgraph.name) + "</B></FONT></TD></TR>");
+    appendLine(labelLines, 3, "<TR><TD></TD></TR>");
+    if (allAssumptions.length > 0) {
+        appendLine(labelLines, 3, "<TR><TD><FONT POINT-SIZE=\"14\" COLOR=\"brown\"><B>Assumptions</B></FONT></TD></TR>");
+        appendLine(labelLines, 3, "<TR><TD BORDER=\"1\" SIDES=\"T\" COLOR=\"WHITE\"></TD></TR>");
+        for (assumption of allAssumptions) {
+            appendLine(labelLines, 3, "<TR><TD ALIGN=\"LEFT\"><FONT POINT-SIZE=\"14\" COLOR=\"brown\">• " + assumption + "</FONT></TD></TR>")
+        }
+        appendLine(labelLines, 3, "<TR><TD BORDER=\"1\" SIDES=\"T\" COLOR=\"WHITE\"><BR/></TD></TR>");
+    }
+    appendLine(labelLines, 2, "</TABLE>")
+    appendLine(lines, 2, serializeProperty(createProperty('label', '<' + labelLines.join('\n') + '>;', true)));
     appendLine(lines, 3, 'graph[' + serializeProperties(subgraph.properties) + '];');
     
     for ([nodeName, node] of subgraph.nodes) {
         appendLine(lines, 2, generateNodeCode(node.id, node.label, node.properties));
     }
 
-    var allAssumptions = [];
+    //var allAssumptions = [];
     for (s of subgraph.subgraphs) {
-        if (s.getProperty('type') == 'Assumption') {
-            allAssumptions.push(s);
-        }
-        lines = lines.concat(generateSubGraph(s));
-    }
-
-    // create edges from each assumption subgraph to each attack/defense node in this graph
-    for (assumption of allAssumptions) {
-        firstNode = assumption.nodes.values().next().value;
-        for (node of subgraph.nodes.values()) {
-            if (node.getProperty('type') == 'Attack' || node.getProperty('type') == 'PreEmptiveDefense' || node.getProperty('type') == 'IncidentResponse') {
-                appendLine(lines, 2, generateID(firstNode.id) + ' -> ' + node.id + '[ltail=cluster_' + assumption.id + '];');
-            }
+        if (s.getProperty('type') != 'Assumption') {
+            lines = lines.concat(generateSubGraph(s));
         }
     }
 
@@ -140,36 +168,6 @@ function generateSubGraph(subgraph) {
     appendLine(lines, 2, '}');
 
     return lines;
-}
-
-
-function generateLegend() {
-    legend = []
-    /*appendLineSpacer(legend);
-    appendLine(legend, 1, 'subgraph cluster_legend {');
-    appendLine(legend, 2, 'label="Legend";');
-    appendLine(legend, 2, 'graph[style="filled, rounded" rankdir="LR" fontsize="16" splines="true" overlap="false" nodesep="0.1" ranksep="0.2" fontname="Courier" fillcolor="lightyellow" color="yellow"];');
-    appendLineSpacer(legend);
-    appendLine(legend, 2, '// Legend Nodes');
-    appendLine(legend, 2, 'A[label="Pre-\\nCondition" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="lightgray" color="gray"];');
-    appendLine(legend, 2, 'B[label="Assumptions" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="dimgray" color="dimgray"];');
-    appendLine(legend, 2, 'C[label="Attack" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="red" color="red"];');
-    appendLine(legend, 2, 'D[label="Pre-emptive\\nDefense"  shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="purple" color="blue"];');
-    appendLine(legend, 2, 'E[label="Incident\\nResponse"  shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="white" fillcolor="blue" color="blue"];');
-    appendLine(legend, 2, 'F[label="Policy" shape="box" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="darkolivegreen3" color="darkolivegreen3"];');
-    appendLine(legend, 2, 'G[label="Empty\\nDefense" shape="box3d" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="transparent" color="blue"];');
-    appendLine(legend, 2, 'H[label="Empty\\nAttack" shape="box3d" style="filled,rounded" margin="0.2" fontname="Arial" fontsize="12" fontcolor="black" fillcolor="transparent" color="red"];');
-    appendLine(legend, 1, '}');
-    appendLine(legend, 1, 'A -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'B -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'C -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'D -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'E -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'F -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'G -> reality [style="invis" ltail="cluster_Legend"];');
-    appendLine(legend, 1, 'H -> reality [style="invis" ltail="cluster_Legend"];');
-    */
-    return legend;
 }
 
 //////////////////////////////////////////////

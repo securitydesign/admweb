@@ -26,12 +26,13 @@ function TextProperties(fontname, fontsize) {
     return properties;
 }
 
-function NodeProperties(style, fontname, fontsize, fontcolor, fillcolor, bordercolor) {
+function NodeProperties(style, fontname, fontsize, fontcolor, fillcolor, bordercolor, borderthickness = 1) {
     properties = [];
     
     properties = properties.concat(createProperty("style", style, false));
     properties = properties.concat(TextProperties(fontname, fontsize));
     properties = properties.concat(ColorSet(fontcolor, fillcolor, bordercolor));
+    properties = properties.concat(createProperty("penwidth", borderthickness, false));
 
     return properties;
 }
@@ -63,7 +64,7 @@ function GraphvizConfig() {
     this.Policy = this.Policy.concat(createProperty('overlap','false', false));
     this.Policy = this.Policy.concat(createProperty('nodesep','0.2', false));
     this.Policy = this.Policy.concat(createProperty('ranksep','0.9', false));
-    this.Policy = this.Policy.concat(NodeProperties('filled, rounded', 'Times', 18, 'black', 'darkolivegreen3', 'darkolivegreen3'));
+    this.Policy = this.Policy.concat(NodeProperties('filled, rounded', 'Arial', 18, 'black', 'darkolivegreen3', 'darkolivegreen3'));
     this.Policy = this.Policy.concat(createProperty('type', 'Policy', false));
     
     this.PreConditions = []
@@ -75,6 +76,11 @@ function GraphvizConfig() {
     this.Attack = this.Attack.concat(createProperty('shape', ShapeOptions.BOX, false))
     this.Attack = this.Attack.concat(NodeProperties('filled, rounded', 'Arial', 16, 'white', 'red', 'red'));
     this.Attack = this.Attack.concat(createProperty('type', 'Attack', false));
+
+    this.UnmitigatedAttack = []
+    this.UnmitigatedAttack = this.UnmitigatedAttack.concat(createProperty('shape', ShapeOptions.BOX, false))
+    this.UnmitigatedAttack = this.UnmitigatedAttack.concat(NodeProperties('filled, rounded', 'Arial', 16, 'red', 'yellow', 'red', 4));
+    this.UnmitigatedAttack = this.UnmitigatedAttack.concat(createProperty('type', 'UnmitigatedAttack', false));
     
     this.PreEmptiveDefense = []
     this.PreEmptiveDefense = this.PreEmptiveDefense.concat(createProperty('shape', ShapeOptions.BOX, false));

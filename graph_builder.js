@@ -129,7 +129,6 @@ function createAssumptionSubgraph(assumption, config) {
 
 function createPolicySubgraph(policy, edgesMap, config) {
     var properties = [];
-    properties = properties.concat(createProperty('label', '<<B>' + htmlwrap(policy.name) + '</B>>;', true));
     properties = properties.concat(config.Policy);
     var graph = new Graph(policy.name, properties);
 

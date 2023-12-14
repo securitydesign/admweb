@@ -225,12 +225,12 @@ body, html {
 }
 
 @media screen and (max-width: 600px) {
-    #colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
+    #colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .UnmitigatedAttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
         font-size: 8px;
     }
 }
 
-#colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
+#colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .UnmitigatedAttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
     flex: 1;
     margin: 8px 10px 0 10px;
     height: 25px;
@@ -274,6 +274,15 @@ body, html {
     font-family: Arial, sans-serif;
     color: white;
     background-color: red;
+}
+
+#colorLegend .UnmitigatedAttackBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: red;
+    background-color: yellow;
 }
 
 #colorLegend .PreEmptiveDefenseBar {
