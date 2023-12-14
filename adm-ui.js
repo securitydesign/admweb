@@ -303,7 +303,7 @@ function renderGraphviz(svg) {
         });
 
         // Select all nodes with yellow fill
-        const yellowNodes = svgDoc.querySelectorAll('svg g.node path[stroke="#ff0000"]');
+        const yellowNodes = svgDoc.querySelectorAll('svg g.node path[fill="#ffff00"]');
 
         // Apply the animations to each yellow node
         yellowNodes.forEach(node => {
