@@ -225,27 +225,17 @@ body, html {
 }
 
 @media screen and (max-width: 600px) {
-    #colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .UnmitigatedAttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
+    #colorLegend .PreConditionBar, .PolicyBar, .AttackBar, .UnmitigatedAttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
         font-size: 8px;
     }
 }
 
-#colorLegend .AssumptionBar, .PreConditionBar, .PolicyBar, .AttackBar, .UnmitigatedAttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
+#colorLegend .PreConditionBar, .PolicyBar, .AttackBar, .UnmitigatedAttackBar, .PreEmptiveDefenseBar, .IncidentResponseBar {
     flex: 1;
     margin: 8px 10px 0 10px;
     height: 25px;
     border-radius: 50px;
     box-shadow: 0 0 10px rgba(117, 117, 117, 1.0);
-}
-
-#colorLegend .AssumptionBar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Times New Roman', Times, serif;
-    font-weight: bold;
-    color: white;
-    background-color: dimgray;
 }
 
 #colorLegend .PreConditionBar {
@@ -261,7 +251,7 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Times New Roman', Times, serif;
+    font-family: Arial, sans-serif;
     font-weight: bold;
     color: black;
     background-color: rgb(162, 205, 90); /* darkolivegreen3 in Graphviz */

@@ -70,7 +70,7 @@ function contentChangeHandler(editor) {
     const adm_content = editor.getValue();
     if (adm_content === '') {
         // clear canvas if there is no content
-        clearCanvas();
+        resetCanvas();
         return;
     }
     RenderSVGFromADM(adm_content);
@@ -343,6 +343,7 @@ function resetCanvas() {
     currentScale = 1;
     updateZoomPercentage(currentScale);
     diagramArea.style.transform = `scale(${currentScale})`;
+    diagramArea.innerHTML = '';
 
     // clear localstorage parameters
     localStorage.removeItem('canvasPosX');
