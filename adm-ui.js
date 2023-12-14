@@ -302,9 +302,28 @@ function renderGraphviz(svg) {
             polygon.setAttribute('fill', 'transparent');
         });
 
+        // Select all nodes with yellow fill
+        const yellowNodes = svgDoc.querySelectorAll('svg g.node path[stroke="#ff0000"]');
+
+        // Apply the animations to each yellow node
+        yellowNodes.forEach(node => {
+            node.appendChild(createStrokeAnimation()); // Apply fill animation
+        });
+
         var serializer = new XMLSerializer();
         var modifiedSvgString = serializer.serializeToString(svgDoc);
 
         diagramArea.innerHTML = modifiedSvgString;
     }
+}
+
+// Function to create an animation element for stroke
+function createStrokeAnimation() {
+    const animateStroke = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+        animateStroke.setAttribute('attributeName', 'stroke');
+        animateStroke.setAttribute('values', 'red;yellow;red');
+        animateStroke.setAttribute('dur', '3s');
+        animateStroke.setAttribute('repeatCount', 'indefinite');
+        animateStroke.setAttribute('calcMode', 'discrete');
+        return animateStroke;
 }
